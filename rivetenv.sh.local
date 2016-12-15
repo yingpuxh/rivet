@@ -1,0 +1,30 @@
+. /cvmfs/sft.cern.ch/lcg/views/LCG_latest/x86_64-slc6-gcc62-opt/setup.sh
+export HADOOP_CONF_DIR=/etc/hadoop/conf
+
+## These variables need to exist
+prefix=$PWD
+exec_prefix=${prefix}
+datarootdir=${prefix}/share
+
+## Try to automatically work out the YODA Python path
+YODA_PYTHONPATH=${prefix}/lib/python2.7/site-packages
+test -n "$YODA_PYTHONPATH" || { (which yoda-config > /dev/null) && YODA_PYTHONPATH=`yoda-config --pythonpath`; }
+test -n "$YODA_PYTHONPATH" || echo "yoda-config could not be found: you may need to manually set paths to libYODA and the yoda Python package" 1>&2
+
+export PATH="$exec_prefix/bin:/storage/bp15067/rivet/lib/../bin:$PATH"
+export LD_LIBRARY_PATH="${exec_prefix}/lib:/storage/bp15067/rivet/lib:/storage/bp15067/rivet/lib:/storage/bp15067/rivet/lib:/storage/bp15067/rivet/lib:$LD_LIBRARY_PATH"
+export PYTHONPATH="/storage/bp15067/rivet/lib/python2.7/site-packages:$YODA_PYTHONPATH:$PYTHONPATH"
+
+export TEXMFHOME="${datarootdir}/Rivet/texmf:$TEXMFHOME"
+export HOMETEXMF="${datarootdir}/Rivet/texmf:$HOMETEXMF"
+export TEXMFCNF="${datarootdir}/Rivet/texmf/cnf:$TEXMFCNF"
+export TEXINPUTS="${datarootdir}/Rivet/texmf/tex//:$TEXINPUTS"
+export LATEXINPUTS="${datarootdir}/Rivet/texmf/tex//:$LATEXINPUTS"
+
+if (complete &> /dev/null); then
+    test -e "${datarootdir}/Rivet/rivet-completion" && source "${datarootdir}/Rivet/rivet-completion"
+fi
+
+unset YODA_PYTHONPATH
+export RIVET_ANALYSIS_PATH=${prefix}/addons
+export RIVET_REF_PATH=${prefix}/addons

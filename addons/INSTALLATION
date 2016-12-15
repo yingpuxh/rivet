@@ -1,0 +1,23 @@
+### instruction on how to install rivet and modifications 
+#copy rivet-bootstrap_2.5.2 from addons to rivet installation path PATHTORIVET   
+#execute the following: 
+INSTALL_PREFIX=PATHTORIVET/rivet MAKE="make -j12" ./rivet-bootstrap_2.5.2
+#copy addons to ${INSTALL_PREFIX}/. 
+source install_addons.sh
+source make.sh
+source run.sh
+# create working dir in PATHTORIVET
+mkdir -p PATHTORIVET/work; cd PATHTORIVET/wor
+cp PATHTORIVET/addons/make.sh .
+cp PATHTORIVET/addons/run.sh .
+cp PATHTORIVET/addons/example.hepmc.gz .
+cp PATHTORIVET/addons/example.yoda .
+
+### to run rivet
+source PATHTORIVET/rivetenv.sh
+#compile fat higgstagging using 
+source make.sh # in addons 
+# execute example
+source run.sh
+compare result to example.org.yoda
+
