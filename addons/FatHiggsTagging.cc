@@ -1,5 +1,9 @@
 // -*- C++ -*-
 #include "Rivet/Analysis.hh"
+#include "Rivet/Projections/MissingMomentum.hh"
+#include "Rivet/Projections/SmearedMET.hh"
+#include "Rivet/Projections/SmearedJets.hh"
+#include "Rivet/Projections/SmearedParticles.hh"
 #include "Rivet/Projections/FinalState.hh"
 #include "Rivet/Projections/ChargedFinalState.hh"
 #include "Rivet/Projections/UnstableFinalState.hh"
@@ -16,7 +20,8 @@
 #include <fastjet/tools/Filter.hh>
 #include <fastjet/contrib/Nsubjettiness.hh>
 #include <fastjet/contrib/EnergyCorrelator.hh>
-#include <fstream>     
+#include <fstream>
+#include <random>
 
 using namespace fastjet::contrib;
 
@@ -99,6 +104,9 @@ namespace Rivet {
       IdentifiedFinalState darkmatter({{1000022, -1000022}}, Cuts::pT > 0.5 * GeV && Cuts::abseta < 5.0);
       addProjection(darkmatter, "darkmatter");
       
+      //Rivet has a list of visible particles. Any particle not in that list is automatically invisible. The missing momentum is calculated as the opposite of the sum of all visible momenta.
+      addProjection(MissingMomentum(fs), "MissingET");
+
       /// Book histogram
       if(_process == "higgs"){
 	_h_higgspt        = bookHisto1D("higgspt",            26,  200.,  1500.);
@@ -108,8 +116,8 @@ namespace Rivet {
       }
       _h_fatjetpt         = bookHisto1D("fatjetpt",           26,  200.,  1500.);
       _h_fatjeteta        = bookHisto1D("fatjeteta",          25,  -2.5,    2.5);
-      _h_fatjetmass       = bookHisto1D("fatjetmass",         28,    0.,   280.);
-      _h_fatjetmasscorr   = bookHisto1D("fatjetmasscorr",     28,    0.,   280.);
+      _h_fatjetmass       = bookHisto1D("fatjetmass",         14,    0.,   280.);
+      _h_fatjetmasscorr   = bookHisto1D("fatjetmasscorr",     14,    0.,   280.);
       _h_fatjetnsub21     = bookHisto1D("fatjetnsub21",       16,   0.0,    1.6);
       _h_fatjetc2         = bookHisto1D("fatjetc2",           14,   0.0,    0.7);
       _h_fatjetd2         = bookHisto1D("fatjetd2",           25,   0.0,    5.0);
@@ -117,7 +125,11 @@ namespace Rivet {
       _h_fatjetdphimet    = bookHisto1D("fatjetdphimet",      20,   0.0,    1.0);
       _h_cutflow          = bookHisto1D("cutflow",            10,  -0.5,    9.5);
       _h_weight           = bookHisto1D("weight",            200, -100.,   100.);
-      _h_met              = bookHisto1D("met",                21, 150.0,  1200.);
+      _h_truemet          = bookHisto1D("truemet",            14, 500.0,  1200.);
+      _h_met              = bookHisto1D("met",                14, 500.0,  1200.);
+      _h_smearedmet       = bookHisto1D("smearedmet",         14, 500.0,  1200.);
+      _h_metdiff          = bookHisto1D("metdiff",            20, -100.0, 100.0);
+      _h_smearedmetdiff   = bookHisto1D("smearedmetdiff",     20, -100.0, 100.0);
       _h_sphericity       = bookHisto1D("sphericity",         33,  -0.1,    1.0); 
       _h_aplanarity       = bookHisto1D("aplanarity",         36,  -0.1,    0.5); 
       
@@ -138,6 +150,8 @@ namespace Rivet {
     /// Perform the per-event analysis
     void analyze(const Event& event) {
 
+      static random_device rd;
+      static mt19937 gen(rd());
 
       _h_cutflow->fill(0., event.weight());
 
@@ -157,12 +171,25 @@ namespace Rivet {
       // neutrinos and dark matter particles for met 
       const Particles& neutrinos = apply<PromptFinalState>(event, "neutrinos").particlesByPt();
       const Particles& darkmatter = apply<IdentifiedFinalState>(event, "darkmatter").particlesByPt();
-      FourMomentum met;
-      for (const Particle& nu : neutrinos)  met += nu.momentum();
-      for (const Particle& dm : darkmatter) met += dm.momentum();
+      FourMomentum truemet;
+      for (const Particle& nu : neutrinos)  truemet += nu.momentum();
+      for (const Particle& dm : darkmatter) truemet += dm.momentum();
 
-      //agrohsje lowered to 50 GeV 
-      if (met.pT() < 300*GeV) vetoEvent;
+      const MissingMomentum& mm = applyProjection<MissingMomentum>(event, "MissingET");
+
+      //MET smearing based on https://rivet.hepforge.org/code/dev/SmearingFunctions_8hh_source.html (MET_SMEAR_ATLAS_RUN1) and https://arxiv.org/pdf/1108.5602v2.pdf, Figs 14 and 15
+      Vector3 met = mm.vectorEt();
+      double set = mm.scalarEt();
+      Vector3 smearedmet = met;
+      if (met.mod()/GeV < 25*GeV) smearedmet *= 1.05;
+      else if (met.mod()/GeV < 40*GeV) smearedmet *= (1.05 - (0.04/15)*(met.mod()/GeV - 25));
+      else smearedmet *= 1.01;
+      const double resolution = 0.45 * sqrt(set/GeV) * GeV;           //Warum const???
+      normal_distribution<> d1(smearedmet.mod(), resolution);
+      const double metsmear = max(d1(gen), 0.);
+      smearedmet = metsmear * smearedmet.unit();
+
+      if (smearedmet.mod() < 500*GeV) vetoEvent;
       _h_cutflow->fill(1., event.weight());
 
       // slimmed jets and trimmed fat jets
@@ -286,11 +313,16 @@ namespace Rivet {
 	if(higgsbbbartagged(fathiggsjets[ifjet], "ALL", Cuts::pT>250*GeV && Cuts::abseta < 2.0, Cuts::pT>5*GeV && Cuts::abseta < 2.5 ))
 	  _h_higgspthbbtag->fill(partonhiggs[0].perp()/GeV,  event.weight());  
 	
+	//Jet smearing assuming 10% mass resolution, see https://indico.in2p3.fr/event/9417/session/2/contribution/5/material/slides/0.pdf and ATL-PHYS-PUB-2015-035
+	static const double resolution = 0.1;
+	normal_distribution<> d2(1., resolution);
+	const double fsmear = max(d2(gen), 0.);
+
 	// push back selected jets and some jet properties 
 	trimmedfatjets.push_back(pjet);
 	FourMomentum fatjetcorr(pjet.e(), pjet.px(), pjet.py(), pjet.pz());
 	for ( Particle muon : muoncorr) fatjetcorr += muon.momentum();
-	tfjcorrmass.push_back(fatjetcorr.mass());
+	tfjcorrmass.push_back(fatjetcorr.mass()*fsmear);
 	tfjntracks.push_back(trackflavor.size());
       }
       // veto events with less or more than one good fat jet 
@@ -328,7 +360,11 @@ namespace Rivet {
       
       // event properties 
       _h_weight->fill(event.weight(),                1.);	  
-      _h_met->fill(met.pT()/GeV,         event.weight());	  
+      _h_truemet->fill(truemet.pT()/GeV, event.weight());	  
+      _h_met->fill(met.mod()/GeV,         event.weight());	  
+      _h_smearedmet->fill(smearedmet.mod()/GeV,event.weight());	  
+      _h_metdiff->fill(truemet.pT()/GeV-met.mod()/GeV,event.weight());	  
+      _h_smearedmetdiff->fill(met.mod()/GeV-smearedmet.mod()/GeV,event.weight());	  
       _h_aplanarity->fill(aplanarity,    event.weight());	  
       _h_sphericity->fill(sphericity,    event.weight());	  
       
@@ -339,31 +375,34 @@ namespace Rivet {
     /// Normalise histograms etc., after the run
     void finalize() {
       
-      double lumi = 30000.; 
+      double lumi = 3200.; 
       double norm=lumi*crossSection()/picobarn / sumOfWeights();
       
       std::cout<<" lumi*crossSection()/picobarn " << lumi*crossSection()/picobarn << " sum of weiht " << sumOfWeights() << " nrm  "<< norm << std::endl; 
       
-      _h_fatjetpt->scaleW(norm);
-      _h_fatjeteta->scaleW(norm);
-      _h_fatjetmass->scaleW(norm);
-      _h_fatjetmasscorr->scaleW(norm);
-      _h_fatjetnsub21->scaleW(norm);
-      _h_fatjetc2->scaleW(norm);
-      _h_fatjetd2->scaleW(norm);
-      _h_fatjetntjets->scaleW(norm);
-      _h_fatjetdphimet->scaleW(norm);
-      _h_cutflow->scaleW(norm);
-      _h_met->scaleW(norm);
-      _h_aplanarity->scaleW(norm);
-      _h_sphericity->scaleW(norm);
+      _h_fatjetpt->scaleW(norm*_h_fatjetpt->bin(0).width());
+      _h_fatjeteta->scaleW(norm*_h_fatjeteta->bin(0).width());
+      _h_fatjetmass->scaleW(norm*_h_fatjetmass->bin(0).width());
+      _h_fatjetmasscorr->scaleW(norm*_h_fatjetmasscorr->bin(0).width());
+      _h_fatjetnsub21->scaleW(norm*_h_fatjetnsub21->bin(0).width());
+      _h_fatjetc2->scaleW(norm*_h_fatjetc2->bin(0).width());
+      _h_fatjetd2->scaleW(norm*_h_fatjetd2->bin(0).width());
+      _h_fatjetntjets->scaleW(norm*_h_fatjetntjets->bin(0).width());
+      _h_fatjetdphimet->scaleW(norm*_h_fatjetdphimet->bin(0).width());
+      _h_cutflow->scaleW(norm*_h_cutflow->bin(0).width());
+      _h_truemet->scaleW(norm*_h_truemet->bin(0).width());
+      _h_met->scaleW(norm*_h_met->bin(0).width());
+      _h_smearedmet->scaleW(norm*_h_smearedmet->bin(0).width());
+      _h_metdiff->scaleW(norm*_h_metdiff->bin(0).width());
+      _h_aplanarity->scaleW(norm*_h_aplanarity->bin(0).width());
+      _h_sphericity->scaleW(norm*_h_sphericity->bin(0).width());
       
       if(_process=="higgs"){
-	_h_higgspt->scaleW(norm);
-	_h_higgspthbbtag->scaleW(norm);
+	_h_higgspt->scaleW(norm/_h_higgspt->bin(0).width());
+	_h_higgspthbbtag->scaleW(norm/_h_higgspthbbtag->bin(0).width());
       	//Rivet::Analysis::efficiency(*_h_higgspthbbtag,  *_h_higgspt,  _h_higgspt_hbbtagefficiency);
       }else if(_process=="ttbar"){
-	_h_toppt->scaleW(norm);
+	_h_toppt->scaleW(norm/_h_toppt->bin(0).width());
       }
       
       
@@ -462,7 +501,11 @@ namespace Rivet {
     Histo1DPtr   _h_fatjetdphimet;
     Histo1DPtr   _h_cutflow;      
     Histo1DPtr   _h_weight;
+    Histo1DPtr   _h_truemet;
     Histo1DPtr   _h_met;
+    Histo1DPtr   _h_smearedmet;
+    Histo1DPtr   _h_metdiff;
+    Histo1DPtr   _h_smearedmetdiff;
     Histo1DPtr   _h_sphericity;
     Histo1DPtr   _h_aplanarity;
     
