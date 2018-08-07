@@ -115,24 +115,45 @@ namespace Rivet {
 	_h_toppt          = bookHisto1D("toppt",              26,  200.,  1500.);
       }
       _h_fatjetpt         = bookHisto1D("fatjetpt",           26,  200.,  1500.);
+      _h_fatjetptafter1    = bookHisto1D("fatjetptafter1",           26,  200.,  1500.);
+      _h_fatjetptafter2    = bookHisto1D("fatjetptafter2",           26,  200.,  1500.);
+      _h_fatjetptafter3    = bookHisto1D("fatjetptafter3",           26,  200.,  1500.);
       _h_fatjeteta        = bookHisto1D("fatjeteta",          25,  -2.5,    2.5);
+      _h_fatjetetaafter1   = bookHisto1D("fatjetetaafter1",          25,  -2.5,    2.5);
+      _h_fatjetetaafter2   = bookHisto1D("fatjetetaafter2",          25,  -2.5,    2.5);
+      _h_fatjetetaafter3   = bookHisto1D("fatjetetaafter3",          25,  -2.5,    2.5);
       _h_fatjetmass       = bookHisto1D("fatjetmass",         14,    0.,   280.);
+      _h_fatjetmassafter1  = bookHisto1D("fatjetmassafter1",         14,    0.,   120.);
+      _h_fatjetmassafter2  = bookHisto1D("fatjetmassafter2",         14,    0.,   120.);
+      _h_fatjetmassafter3  = bookHisto1D("fatjetmassafter3",         14,    0.,   120.);
       _h_fatjetmasscorr   = bookHisto1D("fatjetmasscorr",     14,    0.,   280.);
       _h_fatjetnsub21     = bookHisto1D("fatjetnsub21",       16,   0.0,    1.6);
       _h_fatjetc2         = bookHisto1D("fatjetc2",           14,   0.0,    0.7);
       _h_fatjetd2         = bookHisto1D("fatjetd2",           25,   0.0,    5.0);
       _h_fatjetntjets     = bookHisto1D("fatjetntjets",        7,  -0.5,    6.5);
       _h_fatjetdphimet    = bookHisto1D("fatjetdphimet",      20,   0.0,    1.0);
-      _h_cutflow          = bookHisto1D("cutflow",            10,  -0.5,    9.5);
+      _h_cutflow          = bookHisto1D("cutflow",            11,  -0.5,    10.5);
       _h_weight           = bookHisto1D("weight",            200, -100.,   100.);
-      _h_truemet          = bookHisto1D("truemet",            14, 500.0,  1200.);
-      _h_met              = bookHisto1D("met",                14, 500.0,  1200.);
-      _h_smearedmet       = bookHisto1D("smearedmet",         14, 500.0,  1200.);
+      _h_truemet3         = bookHisto1D("truemet3",           14, 500.0,  1200.);
+      _h_met3             = bookHisto1D("met3",               14, 500.0,  1200.);
+      _h_smearedmet3      = bookHisto1D("smearedmet3",        14, 500.0,  1200.);
+      _h_smearedmet4      = bookHisto1D("smearedmet4",        14, 500.0,  1200.);
+      _h_smearedmet5      = bookHisto1D("smearedmet5",        14, 500.0,  1200.);
+      _h_smearedmet6      = bookHisto1D("smearedmet6",        14, 500.0,  1200.);
       _h_metdiff          = bookHisto1D("metdiff",            20, -100.0, 100.0);
       _h_smearedmetdiff   = bookHisto1D("smearedmetdiff",     20, -100.0, 100.0);
       _h_sphericity       = bookHisto1D("sphericity",         33,  -0.1,    1.0); 
       _h_aplanarity       = bookHisto1D("aplanarity",         36,  -0.1,    0.5); 
-      
+//      _h_truemet0         = bookHisto1D("truemet0",           14, 500.0,  1200.);
+//      _h_met0             = bookHisto1D("met0",               14, 500.0,  1200.);
+      _h_smearedmet0      = bookHisto1D("smearedmet0",        14, 500.0,  1200.);
+//      _h_truemet1         = bookHisto1D("truemet1",           14, 500.0,  1200.);
+//      _h_met1             = bookHisto1D("met1",               14, 500.0,  1200.);
+      _h_smearedmet1      = bookHisto1D("smearedmet1",        14, 500.0,  1200.);
+//      _h_truemet2         = bookHisto1D("truemet2",           14, 500.0,  1200.);
+//      _h_met2             = bookHisto1D("met2",               14, 500.0,  1200.);
+      _h_smearedmet2      = bookHisto1D("smearedmet2",        14, 500.0,  1200.);
+
       _h_higgspt_hbbtagefficiency  = bookScatter2D("higgspt_hbbtagefficiency",  26,  200.,  1500.);
 
       //_h_deltarfjbh       = bookHisto1D("deltarfjbh",         25,   0.0,    2.5);
@@ -189,7 +210,13 @@ namespace Rivet {
       const double metsmear = max(d1(gen), 0.);
       smearedmet = metsmear * smearedmet.unit();
 
-      if (smearedmet.mod() < 500*GeV) vetoEvent;
+     //draw met plot before the first cut
+//      _h_truemet0->fill(truemet.pT()/GeV, event.weight());
+//      _h_met0->fill(met.mod()/GeV,         event.weight());
+      _h_smearedmet0->fill(smearedmet.mod()/GeV,event.weight());
+
+      
+     if (smearedmet.mod() < 500*GeV) vetoEvent;
       _h_cutflow->fill(1., event.weight());
 
       // slimmed jets and trimmed fat jets
@@ -326,9 +353,20 @@ namespace Rivet {
 	tfjntracks.push_back(trackflavor.size());
       }
       // veto events with less or more than one good fat jet 
+ 
+      // draw met plot before 2nd cut      
+//      _h_truemet1->fill(truemet.pT()/GeV, event.weight());
+//      _h_met1->fill(met.mod()/GeV,         event.weight());
+      _h_smearedmet1->fill(smearedmet.mod()/GeV,event.weight());
+
       if(trimmedfatjets.size()!=1) vetoEvent;
       _h_cutflow->fill(2., event.weight());
-      
+     
+      //draw the met plot before 3rd cut
+//      _h_truemet2->fill(truemet.pT()/GeV, event.weight());
+//      _h_met2->fill(met.mod()/GeV,         event.weight());
+      _h_smearedmet2->fill(smearedmet.mod()/GeV,event.weight());
+
       if ((dressedelectrons+dressedmuons).size()>0)  vetoEvent;
       _h_cutflow->fill(3., event.weight());
       
@@ -357,17 +395,61 @@ namespace Rivet {
       _h_fatjetd2->fill(d2(trimmedfatjets[0]),                                            event.weight());
       _h_fatjetntjets->fill(tfjntracks[0],                                                event.weight());
       _h_fatjetdphimet->fill(deltaPhi(trimmedfatjets[0].phi_02pi(),met.phi(ZERO_2PI))/PI, event.weight());
+
+      _h_truemet3->fill(truemet.pT()/GeV, event.weight());
+      _h_met3->fill(met.mod()/GeV,         event.weight());
+      _h_smearedmet3->fill(smearedmet.mod()/GeV,event.weight());
+
+
+      if (trimmedfatjets[0].m()/GeV > 70)  vetoEvent;
+      if (trimmedfatjets[0].m()/GeV < 30)  vetoEvent;
+      _h_cutflow->fill(4., event.weight());
+
+      _h_fatjetmassafter1->fill(trimmedfatjets[0].m()/GeV,                                      event.weight());
+
+ 
+      _h_fatjetptafter1->fill(trimmedfatjets[0].perp()/GeV,                                     event.weight());
+      _h_fatjetetaafter1->fill(trimmedfatjets[0].eta(),                                         event.weight());
+
+      _h_smearedmet4->fill(smearedmet.mod()/GeV,event.weight());
+
+      if (trimmedfatjets[0].m()/GeV > 90)  vetoEvent;
+      if (trimmedfatjets[0].m()/GeV < 50)  vetoEvent;
+      _h_cutflow->fill(5., event.weight());
+
+      _h_fatjetmassafter2->fill(trimmedfatjets[0].m()/GeV,                                      event.weight());
+      _h_fatjetptafter2->fill(trimmedfatjets[0].perp()/GeV,                                     event.weight());
+      _h_fatjetetaafter2->fill(trimmedfatjets[0].eta(),                                         event.weight());
+
+      _h_smearedmet5->fill(smearedmet.mod()/GeV,event.weight());
+
+      if (trimmedfatjets[0].m()/GeV > 110)  vetoEvent;
+      if (trimmedfatjets[0].m()/GeV < 70)  vetoEvent;
+      _h_cutflow->fill(6., event.weight());
+
+
+
+      _h_fatjetmassafter3->fill(trimmedfatjets[0].m()/GeV,                                      event.weight());
+      _h_fatjetptafter3->fill(trimmedfatjets[0].perp()/GeV,                                     event.weight());
+      _h_fatjetetaafter3->fill(trimmedfatjets[0].eta(),                                         event.weight());
+
+
+      _h_smearedmet6->fill(smearedmet.mod()/GeV,event.weight());
+
+
+
       
       // event properties 
       _h_weight->fill(event.weight(),                1.);	  
-      _h_truemet->fill(truemet.pT()/GeV, event.weight());	  
-      _h_met->fill(met.mod()/GeV,         event.weight());	  
-      _h_smearedmet->fill(smearedmet.mod()/GeV,event.weight());	  
       _h_metdiff->fill(truemet.pT()/GeV-met.mod()/GeV,event.weight());	  
       _h_smearedmetdiff->fill(met.mod()/GeV-smearedmet.mod()/GeV,event.weight());	  
       _h_aplanarity->fill(aplanarity,    event.weight());	  
       _h_sphericity->fill(sphericity,    event.weight());	  
       
+
+
+
+
     }//analyze
       
     //////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -375,28 +457,67 @@ namespace Rivet {
     /// Normalise histograms etc., after the run
     void finalize() {
       
-      double lumi = 3200.; 
+      double lumi = 35900.; 
       double norm=lumi*crossSection()/picobarn / sumOfWeights();
       
       std::cout<<" lumi*crossSection()/picobarn " << lumi*crossSection()/picobarn << " sum of weiht " << sumOfWeights() << " nrm  "<< norm << std::endl; 
       
-      _h_fatjetpt->scaleW(norm*_h_fatjetpt->bin(0).width());
-      _h_fatjeteta->scaleW(norm*_h_fatjeteta->bin(0).width());
-      _h_fatjetmass->scaleW(norm*_h_fatjetmass->bin(0).width());
-      _h_fatjetmasscorr->scaleW(norm*_h_fatjetmasscorr->bin(0).width());
-      _h_fatjetnsub21->scaleW(norm*_h_fatjetnsub21->bin(0).width());
-      _h_fatjetc2->scaleW(norm*_h_fatjetc2->bin(0).width());
-      _h_fatjetd2->scaleW(norm*_h_fatjetd2->bin(0).width());
-      _h_fatjetntjets->scaleW(norm*_h_fatjetntjets->bin(0).width());
-      _h_fatjetdphimet->scaleW(norm*_h_fatjetdphimet->bin(0).width());
-      _h_cutflow->scaleW(norm*_h_cutflow->bin(0).width());
-      _h_truemet->scaleW(norm*_h_truemet->bin(0).width());
-      _h_met->scaleW(norm*_h_met->bin(0).width());
-      _h_smearedmet->scaleW(norm*_h_smearedmet->bin(0).width());
-      _h_metdiff->scaleW(norm*_h_metdiff->bin(0).width());
-      _h_aplanarity->scaleW(norm*_h_aplanarity->bin(0).width());
-      _h_sphericity->scaleW(norm*_h_sphericity->bin(0).width());
+      // _h_fatjetpt->scaleW(norm*_h_fatjetpt->bin(0).width());
+      // _h_fatjeteta->scaleW(norm*_h_fatjeteta->bin(0).width());
+      // _h_fatjetmass->scaleW(norm*_h_fatjetmass->bin(0).width());
+      // _h_fatjetmasscorr->scaleW(norm*_h_fatjetmasscorr->bin(0).width());
+      // _h_fatjetnsub21->scaleW(norm*_h_fatjetnsub21->bin(0).width());
+      // _h_fatjetc2->scaleW(norm*_h_fatjetc2->bin(0).width());
+      // _h_fatjetd2->scaleW(norm*_h_fatjetd2->bin(0).width());
+      // _h_fatjetntjets->scaleW(norm*_h_fatjetntjets->bin(0).width());
+      // _h_fatjetdphimet->scaleW(norm*_h_fatjetdphimet->bin(0).width());
+      // _h_cutflow->scaleW(norm*_h_cutflow->bin(0).width());
+      // _h_truemet->scaleW(norm*_h_truemet->bin(0).width());
+      // _h_met->scaleW(norm*_h_met->bin(0).width());
+      // _h_smearedmet->scaleW(norm*_h_smearedmet->bin(0).width());
+      // _h_metdiff->scaleW(norm*_h_metdiff->bin(0).width());
+      // _h_aplanarity->scaleW(norm*_h_aplanarity->bin(0).width());
+      // _h_sphericity->scaleW(norm*_h_sphericity->bin(0).width());
       
+      _h_fatjetpt->scaleW(norm);
+      _h_fatjetptafter1->scaleW(norm);
+      _h_fatjetptafter2->scaleW(norm);
+      _h_fatjetptafter3->scaleW(norm);
+      _h_fatjeteta->scaleW(norm);
+      _h_fatjetetaafter1->scaleW(norm);
+      _h_fatjetetaafter2->scaleW(norm);
+      _h_fatjetetaafter3->scaleW(norm);
+      _h_fatjetmass->scaleW(norm);
+      _h_fatjetmassafter1->scaleW(norm);
+      _h_fatjetmassafter2->scaleW(norm);
+      _h_fatjetmassafter3->scaleW(norm);
+      _h_fatjetmasscorr->scaleW(norm);
+      _h_fatjetnsub21->scaleW(norm);
+      _h_fatjetc2->scaleW(norm);
+      _h_fatjetd2->scaleW(norm);
+      _h_fatjetntjets->scaleW(norm);
+      _h_fatjetdphimet->scaleW(norm);
+      _h_cutflow->scaleW(norm);
+      _h_truemet3->scaleW(norm);
+      _h_met3->scaleW(norm);
+      _h_smearedmet3->scaleW(norm);
+      _h_smearedmet4->scaleW(norm);
+      _h_smearedmet5->scaleW(norm);
+      _h_smearedmet6->scaleW(norm);
+      _h_metdiff->scaleW(norm);
+      _h_aplanarity->scaleW(norm);
+      _h_sphericity->scaleW(norm);
+//      _h_truemet2->scaleW(norm);
+//      _h_met2->scaleW(norm);
+      _h_smearedmet2->scaleW(norm);
+//      _h_truemet1->scaleW(norm);
+//      _h_met1->scaleW(norm);
+      _h_smearedmet1->scaleW(norm);
+//      _h_truemet0->scaleW(norm);
+//      _h_met0->scaleW(norm);
+      _h_smearedmet0->scaleW(norm);
+
+
       if(_process=="higgs"){
 	_h_higgspt->scaleW(norm/_h_higgspt->bin(0).width());
 	_h_higgspthbbtag->scaleW(norm/_h_higgspthbbtag->bin(0).width());
@@ -408,7 +529,7 @@ namespace Rivet {
       
       // std::cout<<" Efficiency for double btag="<< _doublebtag/_all << ", rejection=" << _all/_doublebtag << std::endl;
       // std::cout<<" Efficiency for single btag="<< _singlebtag/_all << ", rejection=" << _all/_singlebtag << std::endl;
-      
+       
     }
     
   private:
@@ -491,8 +612,17 @@ namespace Rivet {
     Histo1DPtr   _h_higgspthbbtag;
     Histo1DPtr   _h_toppt;
     Histo1DPtr   _h_fatjetpt;
+    Histo1DPtr   _h_fatjetptafter1;
+    Histo1DPtr   _h_fatjetptafter2;
+    Histo1DPtr   _h_fatjetptafter3;
     Histo1DPtr   _h_fatjeteta;
+    Histo1DPtr   _h_fatjetetaafter1;
+    Histo1DPtr   _h_fatjetetaafter2;
+    Histo1DPtr   _h_fatjetetaafter3;
     Histo1DPtr   _h_fatjetmass;
+    Histo1DPtr   _h_fatjetmassafter1;
+    Histo1DPtr   _h_fatjetmassafter2;
+    Histo1DPtr   _h_fatjetmassafter3;
     Histo1DPtr   _h_fatjetmasscorr;
     Histo1DPtr   _h_fatjetnsub21;
     Histo1DPtr   _h_fatjetc2;
@@ -501,13 +631,25 @@ namespace Rivet {
     Histo1DPtr   _h_fatjetdphimet;
     Histo1DPtr   _h_cutflow;      
     Histo1DPtr   _h_weight;
-    Histo1DPtr   _h_truemet;
-    Histo1DPtr   _h_met;
-    Histo1DPtr   _h_smearedmet;
+    Histo1DPtr   _h_truemet3;
+    Histo1DPtr   _h_met3;
+    Histo1DPtr   _h_smearedmet3;
+    Histo1DPtr   _h_smearedmet4;
+    Histo1DPtr   _h_smearedmet5;
+    Histo1DPtr   _h_smearedmet6;
     Histo1DPtr   _h_metdiff;
     Histo1DPtr   _h_smearedmetdiff;
     Histo1DPtr   _h_sphericity;
     Histo1DPtr   _h_aplanarity;
+//    Histo1DPtr   _h_truemet2;
+//    Histo1DPtr   _h_met2;
+    Histo1DPtr   _h_smearedmet2;
+//    Histo1DPtr   _h_truemet1;
+//    Histo1DPtr   _h_met1;
+    Histo1DPtr   _h_smearedmet1;
+//    Histo1DPtr   _h_truemet0;
+//    Histo1DPtr   _h_met0;
+    Histo1DPtr   _h_smearedmet0;
     
     // efficiency of hbbbar tag as a function of higgs pT
     Scatter2DPtr _h_higgspt_hbbtagefficiency; 
@@ -517,6 +659,7 @@ namespace Rivet {
     // float        _allhbbbar;
     //Histo1DPtr   _h_deltarfjbh;
     //Histo1DPtr     _h_random;
+    //
   };
   
   
